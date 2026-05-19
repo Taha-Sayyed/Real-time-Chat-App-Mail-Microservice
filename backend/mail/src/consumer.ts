@@ -1,57 +1,60 @@
-import amqp from "amqplib";
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-dotenv.config();
+import type { Channel, Message, ChannelModel } from "amqplib";
+import type { Transporter } from "nodemailer";
 
+// ─── Interfaces for Injected Dependencies ───
 
-export const startSendOtpConsumer = async () => {
-    try {
-        const connection = await amqp.connect({
-            protocol: "amqp",
-            hostname: process.env.Rabbitmq_Host,
-            port: 5672,
-            username: process.env.Rabbitmq_Username,
-            password: process.env.Rabbitmq_Password,
-        });
-
-        const channel = await connection.createChannel();
-        const queueName = "send-otp";
-        await channel.assertQueue(queueName, { durable: true });
-
-        console.log("✅ Mail Service consumer started, listening for otp emails");
-
-        channel.consume(queueName, async (msg) => {
-            if (msg) {
-                try {
-                    const { to, subject, body } = JSON.parse(msg.content.toString());
-
-                    const transporter = nodemailer.createTransport({
-                        host: "smtp.gmail.com",
-                        port: 465,
-                        secure: true, //for aws
-                        auth: {
-                            user: process.env.USER,
-                            pass: process.env.PASSWORD,
-                        },
-                    });
-
-                    await transporter.sendMail({
-                        from: "Chat app",
-                        to,
-                        subject,
-                        text: body,
-                    });
-
-                    console.log(`✅OTP mail sent to ${to}`);
-                    channel.ack(msg);
-
-                } catch (error) {
-                    console.log("❌Failed to send otp", error);
-                }
-            }
-        })
-
-    } catch (error) {
-        console.log("❌Failed to start rabbitmq consumer", error);
-    }
+export interface SendOtpConsumerDeps {
+  rabbitConnection: ChannelModel;
+  emailTransporter: Transporter;
 }
+
+export interface SendOtpConsumerOptions {
+  queueName?: string;
+  fromAddress?: string;
+}
+
+export interface OtpMessage {
+  to: string;
+  subject: string;
+  body: string;
+}
+
+// ─── Refactored Function ───
+
+export const startSendOtpConsumer = async (
+  deps: SendOtpConsumerDeps,
+  options: SendOtpConsumerOptions = {}
+): Promise<Channel> => {
+  const { rabbitConnection, emailTransporter } = deps;
+  const { queueName = "send-otp", fromAddress = "Chat app" } = options;
+
+  const channel = await rabbitConnection.createChannel();
+  await channel.assertQueue(queueName, { durable: true });
+
+  console.log("✅ Mail Service consumer started, listening for otp emails");
+
+  channel.consume(queueName, async (msg: Message | null) => {
+    if (!msg) return;
+
+    try {
+      const { to, subject, body } = JSON.parse(
+        msg.content.toString()
+      ) as OtpMessage;
+
+      await emailTransporter.sendMail({
+        from: fromAddress,
+        to,
+        subject,
+        text: body,
+      });
+
+      console.log(`✅ OTP mail sent to ${to}`);
+      channel.ack(msg);
+    } catch (error) {
+      console.error("❌ Failed to send otp", error);
+      // Do not ack — allow RabbitMQ to requeue or dead-letter the message
+    }
+  });
+
+  return channel;
+};

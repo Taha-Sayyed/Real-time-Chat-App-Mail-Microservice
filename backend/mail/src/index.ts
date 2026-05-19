@@ -1,14 +1,33 @@
-import express from "express";
+import amqp from "amqplib";
+import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { startSendOtpConsumer } from "./consumer.js";
 
-
 dotenv.config();
 
-startSendOtpConsumer();
+async function startMailConsumer() {
+  const rabbitConnection = await amqp.connect({
+    protocol: "amqp",
+    hostname: process.env.Rabbitmq_Host,
+    port: 5672,
+    username: process.env.Rabbitmq_Username,
+    password: process.env.Rabbitmq_Password,
+  });
 
-const app = express();
+  const emailTransporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.USER,
+      pass: process.env.PASSWORD,
+    },
+  });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
-});
+  await startSendOtpConsumer(
+    { rabbitConnection, emailTransporter },
+    { queueName: "send-otp", fromAddress: "Chat app" }
+  );
+}
+
+startMailConsumer();
