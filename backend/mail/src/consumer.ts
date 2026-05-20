@@ -1,8 +1,6 @@
 import type { Channel, Message, ChannelModel } from "amqplib";
 import type { Transporter } from "nodemailer";
 
-// ─── Interfaces for Injected Dependencies ───
-
 export interface SendOtpConsumerDeps {
   rabbitConnection: ChannelModel;
   emailTransporter: Transporter;
@@ -18,8 +16,6 @@ export interface OtpMessage {
   subject: string;
   body: string;
 }
-
-// ─── Refactored Function ───
 
 export const startSendOtpConsumer = async (
   deps: SendOtpConsumerDeps,
@@ -52,7 +48,6 @@ export const startSendOtpConsumer = async (
       channel.ack(msg);
     } catch (error) {
       console.error("❌ Failed to send otp", error);
-      // Do not ack — allow RabbitMQ to requeue or dead-letter the message
     }
   });
 
