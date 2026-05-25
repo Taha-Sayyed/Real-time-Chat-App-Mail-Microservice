@@ -2,8 +2,18 @@ import amqp from "amqplib";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { startSendOtpConsumer } from "./consumer.js";
+import express from "express";
 
 dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    message: "Service is Healthy ✅"
+  });
+});
 
 async function startMailConsumer() {
   const rabbitConnection = await amqp.connect({
@@ -30,4 +40,12 @@ async function startMailConsumer() {
   );
 }
 
-startMailConsumer();
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`🚀 Health server running on port ${PORT}`);
+});
+
+startMailConsumer().catch((err) => {
+  console.error("❌ Failed to start mail consumer:", err);
+  process.exit(1);
+});

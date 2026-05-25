@@ -1,0 +1,22 @@
+services:
+  mail-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mail-service:latest
+    container_name: chat-app-mail-service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - Rabbitmq_Host=rabbitmq
+      - NODE_ENV=production
+    networks:
+      - chat-app-network
+
+networks:
+  chat-app-network:
+    name: chat-app-network
+    driver: bridge
