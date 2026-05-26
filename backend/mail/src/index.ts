@@ -29,8 +29,8 @@ async function startMailConsumer() {
     port: 465,
     secure: true,
     auth: {
-      user: process.env.USER,
-      pass: process.env.PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 
