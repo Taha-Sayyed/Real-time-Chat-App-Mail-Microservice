@@ -15,6 +15,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.get("/api/mail/health", (req, res) => {
+  res.status(200).json({
+    message: "Service is Healthy ✅"
+  });
+});
+
 async function startMailConsumer() {
   const rabbitConnection = await amqp.connect({
     protocol: "amqp",
