@@ -11,13 +11,13 @@ app.use(express.json());
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
-    message: "Service is Healthy ✅"
+    message: "Mail Service is Healthy ✅"
   });
 });
 
 app.get("/api/mail/health", (req, res) => {
   res.status(200).json({
-    message: "Service is Healthy ✅"
+    message: "Mail Service is Healthy ✅"
   });
 });
 
