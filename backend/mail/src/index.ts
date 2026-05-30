@@ -11,7 +11,13 @@ app.use(express.json());
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
-    message: "Service is Healthy ✅"
+    message: "Mail Service is Healthy ✅"
+  });
+});
+
+app.get("/api/mail/health", (req, res) => {
+  res.status(200).json({
+    message: "Mail Service is Healthy ✅"
   });
 });
 
@@ -29,8 +35,8 @@ async function startMailConsumer() {
     port: 465,
     secure: true,
     auth: {
-      user: process.env.USER,
-      pass: process.env.PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 
